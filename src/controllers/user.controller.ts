@@ -66,7 +66,7 @@ export const UpdateProfil = async (req: any, res: Response) => {
       [username, email, first_name, last_name, bio, user.id]
     );
     if (result && result.changes && result.changes > 0) {
-      res.status(200).json({ message: "Le profil a étais mis a jours"});
+      res.status(200).json({ message: "Le profil a étais mis a jours" });
     }
   } catch (error) {
     res.status(500).json({ error: "Erreur serveur" });
