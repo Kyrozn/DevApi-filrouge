@@ -90,4 +90,18 @@ Quatre requêtes principales à tester (détails à préciser) :
     - Endpoint : /user
     - Headers : Authorization : Bearer < token > / Content-Type JSON
     - Body : { "passwordTest": "TEST" }
-    - Description : Supprime le compte de l'utilisateur qui fais le requètes
+    - Description : Supprime le compte de l'utilisateur qui fais la requète
+
+5. Requête 5 
+    - Méthode : [PUT]
+    - Endpoint : /admin/setMod
+    - Headers : Authorization : Bearer < token > / Content-Type JSON
+    - Body : { "refresh": < token refresh transmis au login >, "id": < id de la personne dont le statut va etre changé > }
+    - Prérequis : Nécessite d'être de role admin
+    - Description : Met moderateur l'utilisateur dont l'id est spécifié (dans le body)
+
+
+- Requete sql pour set un utilisateur admin
+    ```sql 
+        UPDATE users SET role = 'admin' WHERE id = x
+    ```
