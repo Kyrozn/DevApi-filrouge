@@ -1,11 +1,15 @@
-// auth.middleware.ts
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-interface JwtPayload {
+export interface JwtPayload {
   id: number;
-  email: string;
   role: string;
+}
+
+declare module "express-serve-static-core" {
+  interface Request {
+    user?: JwtPayload;
+  }
 }
 
 export const authenticateToken = (
@@ -14,20 +18,24 @@ export const authenticateToken = (
   next: NextFunction
 ) => {
   const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1]; // "Bearer <token>"
+
+  // authHeader devrait être : "Bearer <token>"
+  const token = authHeader?.split(" ")[1];
 
   if (!token) {
-    return res.status(401).json({ message: "Accès refusé, token manquant" });
+    return res.status(401).json({ error: "Accès refusé : Token manquant" });
   }
 
   try {
-    const secret = process.env.JWT_SECRET || "changeme";
+    const secret = process.env.JWT_SECRET;
+    if (!secret) throw new Error("JWT_SECRET non configuré");
+
     const decoded = jwt.verify(token, secret) as JwtPayload;
 
-    // @ts-ignore : on ajoute user dynamiquement
-    req.user = decoded;
+    req.user = decoded; // grâce au declare module, TS ne râle plus
+
     next();
   } catch (err) {
-    return res.status(403).json({ message: "Token invalide" });
+    return res.status(403).json({ error: "Token invalide ou expiré" });
   }
 };
