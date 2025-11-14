@@ -1,123 +1,145 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import dbPromise from "../config/db";
+import { getDb } from "../config/db";
+import validator from "validator";
 import crypto from "crypto";
+
+
+const generateAccessToken = (user: any) => {
+  return jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET!, {
+    expiresIn: "15m",
+  });
+};
+
+const generateRefreshToken = () => {
+  return crypto.randomBytes(64).toString("hex");
+};
+
 
 export const register = async (req: Request, res: Response) => {
   try {
     const { username, email, password } = req.body;
-    if (!username || !email || !password) {
-      return res.status(400).json({ error: "Field(s) Missing" });
-    }
-    const hashed = await bcrypt.hash(password, 10);
 
-    const db = await dbPromise;
+    if (!username || !email || !password)
+      return res.status(400).json({ error: "Missing fields" });
 
-    // Vérifie si l'utilisateur existe déjà
-    const existing = await db.get("SELECT * FROM users WHERE email = ?", [
+    if (!validator.isEmail(email))
+      return res.status(400).json({ error: "Invalid email" });
+
+    if (password.length < 12)
+      return res.status(400).json({
+        error: "Password too short (min 12 characters)",
+      });
+
+    const db = await getDb();
+
+    const existing = await db.get("SELECT id FROM users WHERE email = ?", [
       email,
     ]);
-    if (existing) {
+    if (existing)
       return res.status(400).json({ error: "Email already in use" });
-    }
 
-    // INSERT (sans RETURNING, SQLite ne renvoie pas les données directement)
-    const result = await db.run(
+    const hashed = await bcrypt.hash(password, 10);
+
+    const insert = await db.run(
       "INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
       [username, email, hashed]
     );
 
-    // `result.lastID` contient l’ID inséré
     const user = await db.get(
-      "SELECT id, username, email FROM users WHERE id = ?",
-      [result.lastID]
+      "SELECT id, username, email, role FROM users WHERE id = ?",
+      [insert.lastID]
     );
 
-    // Génération d’un token JWT si besoin
-    const token = jwt.sign({ id: user.id, username: user.username }, "secret", {
-      expiresIn: "1h",
-    });
+    const refreshToken = generateRefreshToken();
+    await db.run("UPDATE users SET refresh_token = ? WHERE id = ?", [
+      refreshToken,
+      user.id,
+    ]);
 
-    res.json({ user, token });
+    const token = generateAccessToken(user);
+
+    res.status(201).json({
+      user,
+      token,
+      refreshToken,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Registration failed" });
   }
 };
 
+
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: "Field(s) Missing" });
-    }
-    const db = await dbPromise;
-    const user = await db.get("SELECT * FROM users WHERE email=?", [email]);
 
-    if (!user)
-      return res.status(401).json({
-        error: "L'identifiant de connexion ou le mot de passe est incorrect",
-      });
+    if (!email || !password)
+      return res.status(400).json({ error: "Missing fields" });
+
+    const db = await getDb();
+
+    const user = await db.get("SELECT * FROM users WHERE email = ?", [email]);
+    if (!user) return res.status(401).json({ error: "Invalid credentials" });
 
     const match = await bcrypt.compare(password, user.password);
-    if (!match)
-      return res.status(401).json({
-        error: "L'identifiant de connexion ou le mot de passe est incorrect",
-      });
+    if (!match) return res.status(401).json({ error: "Invalid credentials" });
 
-    const token = jwt.sign(
-      { id: user.id, mail: user.email },
-      process.env.JWT_SECRET!,
-      {
-        expiresIn: "90d",
-      }
-    );
+    const refreshToken = generateRefreshToken();
+    await db.run("UPDATE users SET refresh_token = ? WHERE id = ?", [
+      refreshToken,
+      user.id,
+    ]);
 
-    let refreshToken = null;
-    if (user.role === "admin") {
-      refreshToken = crypto.randomBytes(64).toString("hex");
-      await db.run("UPDATE users SET refresh_token = ? WHERE id = ?", [
-        refreshToken,
-        user.id,
-      ]);
-    }
+    const token = generateAccessToken(user);
 
     res.status(200).json({
       token,
       refreshToken,
-      info: { is_premium: user.is_premium, role: user.role },
+      info: {
+        username: user.username,
+        is_premium: user.is_premium,
+        role: user.role,
+      },
     });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Login failed" });
   }
 };
+
+// ========== REFRESH TOKEN ==========
 
 export const refresh = async (req: Request, res: Response) => {
   try {
     const { email, refreshToken } = req.body;
 
     if (!email || !refreshToken)
-      return res.status(400).json({ error: "Missing credentials" });
+      return res.status(400).json({ error: "Missing fields" });
 
-    const db = await dbPromise;
+    const db = await getDb();
     const user = await db.get("SELECT * FROM users WHERE email = ?", [email]);
 
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    if (user.role !== "admin")
-      return res.status(403).json({ error: "Not authorized" });
-
     if (user.refresh_token !== refreshToken)
       return res.status(401).json({ error: "Invalid refresh token" });
 
-    const newToken = jwt.sign(
-      { id: user.id, mail: user.email, role: user.role },
-      process.env.JWT_SECRET!,
-      { expiresIn: "15m" }
-    );
+    const newAccessToken = generateAccessToken(user);
 
-    res.json({ token: newToken });
+    // Optionnel : rotation du refresh token
+    const newRefreshToken = generateRefreshToken();
+    await db.run("UPDATE users SET refresh_token = ? WHERE id = ?", [
+      newRefreshToken,
+      user.id,
+    ]);
+
+    res.status(200).json({
+      token: newAccessToken,
+      refreshToken: newRefreshToken,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to refresh token" });
