@@ -5,7 +5,7 @@ import path from "path";
 
 const dbPath = path.resolve(__dirname, "devApi.db");
 
-// ⚠️ Ne crée pas la promesse tout de suite
+// Ne crée pas la promesse tout de suite
 export const getDb = async () => {
   return open({
     filename: dbPath,

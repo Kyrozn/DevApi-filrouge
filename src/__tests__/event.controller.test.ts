@@ -3,10 +3,9 @@ import express, { Request, Response, NextFunction } from "express";
 import EventRoutes from "../routes/event.routes";
 import { getDb } from "../config/db";
 
-// Mock du middleware d'authentification
 jest.mock("../middleware/auth.middleware.ts", () => ({
   authenticateToken: (req: Request, res: Response, next: NextFunction) => {
-    (req as any).user = { id: 1 }; // Simule un utilisateur connecté
+    (req as any).user = { id: 1 }; 
     next();
   },
 }));
@@ -31,11 +30,8 @@ describe("Event Routes", () => {
     jest.clearAllMocks();
   });
 
-  // --------------------------
-  // TEST CREATE EVENT (POST)
-  // --------------------------
   describe("POST /event", () => {
-    it("✅ crée un événement avec succès", async () => {
+    it("Crée un événement avec succès", async () => {
       mockDb.run.mockResolvedValue({ lastID: 1 });
 
       const res = await request(app).post("/event").send({
@@ -49,7 +45,7 @@ describe("Event Routes", () => {
       expect(mockDb.run).toHaveBeenCalled();
     });
 
-    it("❌ retourne une erreur si valeurs manquantes", async () => {
+    it("Retourne une erreur si valeurs manquantes", async () => {
       const res = await request(app).post("/event").send({
         name: "",
         sport: "",
@@ -59,7 +55,7 @@ describe("Event Routes", () => {
       expect(res.body.error).toBe("Valeurs manquants");
     });
 
-    it("💥 retourne une erreur serveur si DB échoue", async () => {
+    it("Retourne une erreur serveur si DB échoue", async () => {
       mockDb.run.mockRejectedValue(new Error("DB error"));
 
       const res = await request(app).post("/event").send({
@@ -72,11 +68,8 @@ describe("Event Routes", () => {
     });
   });
 
-  // --------------------------
-  // TEST GET ALL EVENTS
-  // --------------------------
   describe("GET /event", () => {
-    it("✅ retourne les événements avec pagination", async () => {
+    it("Retourne les événements avec pagination", async () => {
       mockDb.all.mockResolvedValue([
         { id: 1, name: "Event 1" },
         { id: 2, name: "Event 2" },
@@ -92,7 +85,7 @@ describe("Event Routes", () => {
       expect(res.body.totalPages).toBe(1);
     });
 
-    it("💥 retourne une erreur serveur", async () => {
+    it("Retourne une erreur serveur", async () => {
       mockDb.all.mockRejectedValue(new Error("DB fail"));
 
       const res = await request(app).get("/event");

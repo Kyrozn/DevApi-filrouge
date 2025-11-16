@@ -110,8 +110,6 @@ export const login = async (req: Request, res: Response) => {
   }
 };
 
-// ========== REFRESH TOKEN ==========
-
 export const refresh = async (req: Request, res: Response) => {
   try {
     const { email, refreshToken } = req.body;
@@ -129,7 +127,6 @@ export const refresh = async (req: Request, res: Response) => {
 
     const newAccessToken = generateAccessToken(user);
 
-    // Optionnel : rotation du refresh token
     const newRefreshToken = generateRefreshToken();
     await db.run("UPDATE users SET refresh_token = ? WHERE id = ?", [
       newRefreshToken,

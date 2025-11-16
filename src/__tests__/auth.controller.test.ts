@@ -4,7 +4,6 @@ import jwt from "jsonwebtoken";
 import { getDb } from "../config/db";
 import app from "../index";
 
-// 🧱 Mock des dépendances externes
 jest.mock("bcrypt");
 jest.mock("jsonwebtoken");
 
@@ -13,11 +12,8 @@ describe("AuthController", () => {
     jest.clearAllMocks();
   });
 
-  // ------------------------------------------------------------
-  // 🧩 TEST REGISTER
-  // ------------------------------------------------------------
   describe("POST /auth/register", () => {
-    it("✅ crée un utilisateur avec succès", async () => {
+    it("Crée un utilisateur avec succès", async () => {
       const dbMock = {
         get: jest
           .fn()
@@ -47,7 +43,7 @@ describe("AuthController", () => {
       expect(dbMock.run).toHaveBeenCalled();
     });
 
-    it("❌ retourne 400 si champs manquants", async () => {
+    it("Retourne 400 si champs manquants", async () => {
       const res = await request(app)
         .post("/auth/register")
         .send({ email: "a@b.com" });
@@ -55,7 +51,7 @@ describe("AuthController", () => {
       expect(res.body.error).toBe("Missing fields");
     });
 
-    it("❌ retourne 400 si email déjà utilisé", async () => {
+    it("Retourne 400 si email déjà utilisé", async () => {
       const dbMock = {
         get: jest.fn().mockResolvedValue({ id: 1, email: "a@b.com" }),
         run: jest.fn(),
@@ -73,11 +69,9 @@ describe("AuthController", () => {
     });
   });
 
-  // ------------------------------------------------------------
-  // 🧩 TEST LOGIN
-  // ------------------------------------------------------------
+
   describe("POST /auth/login", () => {
-    it("✅ connexion réussie (user normal)", async () => {
+    it("Connexion réussie (user normal)", async () => {
       const dbMock = {
         get: jest.fn().mockResolvedValue({
           id: 1,
@@ -107,7 +101,7 @@ describe("AuthController", () => {
       });
     });
 
-    it("❌ retourne 400 si champs manquants", async () => {
+    it("Retourne 400 si champs manquants", async () => {
       const res = await request(app)
         .post("/auth/login")
         .send({ email: "a@b.com" });
@@ -115,7 +109,7 @@ describe("AuthController", () => {
       expect(res.body.error).toBe("Missing fields");
     });
 
-    it("❌ retourne 401 si utilisateur inexistant", async () => {
+    it("Retourne 401 si utilisateur inexistant", async () => {
       const dbMock = { get: jest.fn().mockResolvedValue(undefined) };
       (getDb as jest.Mock).mockResolvedValue(dbMock);
 
@@ -128,7 +122,7 @@ describe("AuthController", () => {
       expect(res.body.error).toBe("Invalid credentials");
     });
 
-    it("❌ retourne 401 si mot de passe incorrect", async () => {
+    it("Retourne 401 si mot de passe incorrect", async () => {
       const dbMock = {
         get: jest.fn().mockResolvedValue({
           id: 1,
@@ -149,7 +143,7 @@ describe("AuthController", () => {
       expect(res.body.error).toBe("Invalid credentials");
     });
 
-    it("💥 retourne 500 en cas d'erreur serveur", async () => {
+    it("Retourne 500 en cas d'erreur serveur", async () => {
       (getDb as jest.Mock).mockRejectedValue(new Error("DB down"));
 
       const res = await request(app).post("/auth/login").send({
@@ -162,11 +156,8 @@ describe("AuthController", () => {
     });
   });
 
-  // ------------------------------------------------------------
-  // 🧩 TEST REFRESH
-  // ------------------------------------------------------------
   describe("POST /auth/refresh", () => {
-    it("✅ génère un nouveau token pour un admin valide", async () => {
+    it("Génère un nouveau token pour un admin valide", async () => {
       const dbMock = {
         get: jest.fn().mockResolvedValue({
           id: 16,
@@ -189,13 +180,13 @@ describe("AuthController", () => {
       expect(dbMock.run).toHaveBeenCalled(); // rotation refresh token
     });
 
-    it("❌ retourne 400 si credentials manquants", async () => {
+    it("Retourne 400 si credentials manquants", async () => {
       const res = await request(app).post("/auth/refresh").send({});
       expect(res.status).toBe(400);
       expect(res.body.error).toBe("Missing fields");
     });
 
-    it("❌ retourne 404 si utilisateur introuvable", async () => {
+    it("Retourne 404 si utilisateur introuvable", async () => {
       const dbMock = { get: jest.fn().mockResolvedValue(undefined) };
       (getDb as jest.Mock).mockResolvedValue(dbMock);
 
@@ -208,7 +199,7 @@ describe("AuthController", () => {
       expect(res.body.error).toBe("User not found");
     });
 
-    it("❌ retourne 401 si refreshToken invalide", async () => {
+    it("Retourne 401 si refreshToken invalide", async () => {
       const dbMock = {
         get: jest
           .fn()
@@ -226,7 +217,7 @@ describe("AuthController", () => {
       expect(res.body.error).toBe("Invalid refresh token");
     });
 
-    it("💥 retourne 500 en cas d’erreur serveur", async () => {
+    it("Retourne 500 en cas d’erreur serveur", async () => {
       (getDb as jest.Mock).mockRejectedValue(new Error("DB error"));
 
       const res = await request(app).post("/auth/refresh").send({

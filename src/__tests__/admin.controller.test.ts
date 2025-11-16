@@ -15,7 +15,7 @@ describe("AdminController - setMod", () => {
     jest.clearAllMocks();
   });
 
-  it("✅ devrait modifier le rôle d'un utilisateur avec succès", async () => {
+  it("Devrait modifier le rôle d'un utilisateur avec succès", async () => {
     const dbMock = {
       get: jest.fn().mockResolvedValue({ id: 2, username: "UserTest" }),
       run: jest.fn().mockResolvedValue({ changes: 1 }),
@@ -36,7 +36,7 @@ describe("AdminController - setMod", () => {
     );
   });
 
-  it("❌ devrait retourner 404 si l'utilisateur n'existe pas", async () => {
+  it("Devrait retourner 404 si l'utilisateur n'existe pas", async () => {
     const dbMock = { get: jest.fn().mockResolvedValue(undefined) };
     (getDb as jest.Mock).mockResolvedValue(dbMock);
 
@@ -50,7 +50,7 @@ describe("AdminController - setMod", () => {
     );
   });
 
-  it("💥 devrait retourner 500 en cas d'erreur serveur", async () => {
+  it("Devrait retourner 500 en cas d'erreur serveur", async () => {
     (getDb as jest.Mock).mockRejectedValue(new Error("Erreur DB"));
 
     const res = await request(app).post("/admin/setMod").send({ id: 2 });

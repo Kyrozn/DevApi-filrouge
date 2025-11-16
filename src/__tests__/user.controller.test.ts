@@ -10,11 +10,9 @@ import {
   DeleteUser,
 } from "../controllers/user.controller";
 
-// 🧱 Mocks
 jest.mock("../config/db");
 jest.mock("bcrypt");
 
-// 🧩 Routes temporaires pour tests
 app.get("/profil", (req: any, res: Response) => {
   req.user = { id: 1 };
   return getMyProfil(req, res);
@@ -37,7 +35,6 @@ app.delete("/", (req: any, res: Response) => {
 describe("ProfilController", () => {
   afterEach(() => jest.clearAllMocks());
 
-  // ----------------- GET /profil -----------------
   describe("GET /profil", () => {
     it("✅ retourne le profil de l'utilisateur connecté", async () => {
       const dbMock = {
@@ -63,7 +60,7 @@ describe("ProfilController", () => {
       );
     });
 
-    it("❌ retourne 404 si utilisateur introuvable", async () => {
+    it("Retourne 404 si utilisateur introuvable", async () => {
       const dbMock = { get: jest.fn().mockResolvedValue(undefined) };
       (getDb as jest.Mock).mockResolvedValue(dbMock);
 
@@ -73,7 +70,7 @@ describe("ProfilController", () => {
       expect(res.body.error).toBe("Utilisateur introuvable");
     });
 
-    it("💥 retourne 500 en cas d'erreur serveur", async () => {
+    it("Retourne 500 en cas d'erreur serveur", async () => {
       (getDb as jest.Mock).mockRejectedValue(new Error("DB error"));
 
       const res = await request(app).get("/profil");
@@ -83,9 +80,8 @@ describe("ProfilController", () => {
     });
   });
 
-  // ----------------- GET /profil/:id -----------------
   describe("GET /profil/:id", () => {
-    it("✅ retourne le profil d’un utilisateur spécifique", async () => {
+    it("Retourne le profil d’un utilisateur spécifique", async () => {
       const dbMock = {
         get: jest.fn().mockResolvedValue({
           id: 2,
@@ -108,7 +104,7 @@ describe("ProfilController", () => {
       );
     });
 
-    it("💥 retourne 500 si une erreur survient", async () => {
+    it("Retourne 500 si une erreur survient", async () => {
       (getDb as jest.Mock).mockRejectedValue(new Error("DB error"));
 
       const res = await request(app).get("/profil/2");
@@ -120,7 +116,7 @@ describe("ProfilController", () => {
 
   // ----------------- PUT / -----------------
   describe("PUT /", () => {
-    it("✅ met à jour le profil avec succès", async () => {
+    it("Met à jour le profil avec succès", async () => {
       const dbMock = {
         get: jest.fn().mockResolvedValue({ id: 1 }),
         run: jest.fn().mockResolvedValue({ changes: 1 }),
@@ -140,7 +136,7 @@ describe("ProfilController", () => {
       expect(dbMock.run).toHaveBeenCalled();
     });
 
-    it("❌ retourne 404 si utilisateur introuvable", async () => {
+    it("Retourne 404 si utilisateur introuvable", async () => {
       const dbMock = { get: jest.fn().mockResolvedValue(undefined) };
       (getDb as jest.Mock).mockResolvedValue(dbMock);
 
@@ -150,7 +146,7 @@ describe("ProfilController", () => {
       expect(res.body.error).toBe("Utilisateur introuvable.");
     });
 
-    it("💥 retourne 500 en cas d’erreur serveur", async () => {
+    it("Retourne 500 en cas d’erreur serveur", async () => {
       (getDb as jest.Mock).mockRejectedValue(new Error("DB error"));
 
       const res = await request(app).put("/").send({});
@@ -162,13 +158,13 @@ describe("ProfilController", () => {
 
   // ----------------- DELETE / -----------------
   describe("DELETE /", () => {
-    it("❌ retourne 400 si mot de passe non fourni", async () => {
+    it("Retourne 400 si mot de passe non fourni", async () => {
       const res = await request(app).delete("/").send({});
       expect(res.status).toBe(400);
       expect(res.body.message).toBe("Mot de passe requis.");
     });
 
-    it("❌ retourne 404 si utilisateur introuvable", async () => {
+    it("Retourne 404 si utilisateur introuvable", async () => {
       const dbMock = { get: jest.fn().mockResolvedValue(undefined) };
       (getDb as jest.Mock).mockResolvedValue(dbMock);
 
@@ -177,7 +173,7 @@ describe("ProfilController", () => {
       expect(res.body.message).toBe("Utilisateur introuvable.");
     });
 
-    it("❌ retourne 401 si mot de passe incorrect", async () => {
+    it("Retourne 401 si mot de passe incorrect", async () => {
       const dbMock = {
         get: jest.fn().mockResolvedValue({
           username: "John",
@@ -194,7 +190,7 @@ describe("ProfilController", () => {
       expect(res.body.message).toBe("Mot de passe incorrect.");
     });
 
-    it("✅ supprime l'utilisateur avec succès", async () => {
+    it("Supprime l'utilisateur avec succès", async () => {
       const dbMock = {
         get: jest.fn().mockResolvedValue({
           username: "John",
@@ -210,7 +206,7 @@ describe("ProfilController", () => {
       expect(res.body.message).toMatch(/supprimé avec succès/);
     });
 
-    it("💥 retourne 500 si erreur serveur", async () => {
+    it("Retourne 500 si erreur serveur", async () => {
       (getDb as jest.Mock).mockRejectedValue(new Error("DB down"));
 
       const res = await request(app).delete("/").send({ passwordTest: "123" });
