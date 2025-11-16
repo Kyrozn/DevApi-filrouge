@@ -7,6 +7,7 @@ import userRoutes from "./routes/user.routes";
 import AdminRoutes from "./routes/admin.routes";
 import swaggerSpec from "./config/swagger"
 import EventRoutes from "./routes/event.routes"
+import sportsRoutes from "./routes/sports.routes"
 dotenv.config();
 
 const app = express();
@@ -20,6 +21,7 @@ app.use("/auth", authRoutes);
 app.use("/user", userRoutes);
 app.use("/admin", AdminRoutes);
 app.use("/event", EventRoutes);
+app.use("/sports", sportsRoutes);
 
 const PORT = process.env.PORT || 4000;
 if (process.env.NODE_ENV !== "test") {
